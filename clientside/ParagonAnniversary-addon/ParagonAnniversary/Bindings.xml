@@ -1,0 +1,5 @@
+<Bindings>
+	<Binding name="PARAGONANNIVERSARY_TOGGLE" header="PARAGONANNIVERSARY">
+		ToggleParagonFrame()
+	</Binding>
+</Bindings>

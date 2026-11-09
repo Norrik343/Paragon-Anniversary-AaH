@@ -1,0 +1,20 @@
+## Interface: 30300
+## Title: Paragon Anniversary
+## Notes: Client UI for the Paragon Anniversary system (AzerothCore + ALE), repackaged as an addon with a minimap button and /paragon command.
+## Author: Grim-Batol (original UI); addon conversion
+## Version: 1.0-addon
+## SavedVariables: ParagonAnniversaryDB
+
+# Libraries (c_timer.lua from the original patch is left out: nothing uses it)
+lib\smallfolk.lua
+lib\CMH.lua
+
+# Retail-style frame templates
+Templates\UITemplate2X.xml
+
+# Paragon UI
+Paragon\UIParagon.xml
+Paragon\ParagonExpBar.xml
+
+# Addon glue: minimap button, slash command, key binding, preview mode
+ParagonAnniversary.lua
