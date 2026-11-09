@@ -223,7 +223,7 @@ local function OnParagonLevelChanged(player, paragon, old_level, new_level)
         levels_gained = new_level - old_level
     }
 
-    player:SendNotification("You win a new Paragon level !")
+    player:SendNotification("You have gained a Paragon level!")
 end
 
 -- ============================================================================
