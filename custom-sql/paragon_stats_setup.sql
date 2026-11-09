@@ -24,7 +24,9 @@
 --   Paragon_Network.lua).
 --
 -- COLUMNS
---   factor      ignored by the current server code (each point = +1)
+--   factor      stat gained per point (whole numbers). Needs the Azeroth at
+--               Home factor change in paragon_hook.lua; the original module
+--               ignores it. Change only while the worldserver is stopped.
 --   limit       max points per stat
 --   application UNIT_MODS only: 0 = base value, 1 = total value
 -- ============================================================================
