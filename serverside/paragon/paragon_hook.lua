@@ -119,11 +119,23 @@ local function UpdatePlayerStatistics(player, paragon, apply)
             goto continue
         end
 
+        -- [Azeroth at Home] Apply the statistic's factor: each point invested
+        -- gives `factor` to the stat (paragon_config_statistic.factor, whole
+        -- numbers, default 1). AURA statistics are not affected.
+        -- Change factor only while the server is stopped: bonuses are removed
+        -- at logout with the current factor, so changing it while players are
+        -- online would remove a different amount than was applied.
+        local factor = tonumber(stat_data.factor) or 1
+        if factor < 1 then
+            factor = 1
+        end
+        local amount = stat_value * factor
+
         -- Apply bonus based on statistic type
         if stat_data.type == "UNIT_MODS" then
-            player:HandleStatFlatModifier(constant_stat_type[stat_data.value], stat_data.application, stat_value, apply)
+            player:HandleStatFlatModifier(constant_stat_type[stat_data.value], stat_data.application, amount, apply)
         elseif stat_data.type == "COMBAT_RATING" then
-            player:ApplyRatingMod(constant_stat_type[stat_data.value], stat_value, apply)
+            player:ApplyRatingMod(constant_stat_type[stat_data.value], amount, apply)
         elseif stat_data.type == "AURA" then
             if apply then
                 for _ = 1, stat_value do
