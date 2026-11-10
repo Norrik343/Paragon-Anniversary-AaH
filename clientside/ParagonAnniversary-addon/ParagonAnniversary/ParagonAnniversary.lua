@@ -376,7 +376,7 @@ local function ResetPoints()
 end
 
 StaticPopupDialogs["PARAGON_RESET_POINTS"] = {
-    text = "Reset all Paragon points? Every stat goes back to 0 and all spent points are refunded.",
+    text = "Reset all Paragon points?",
     button1 = YES,
     button2 = NO,
     OnAccept = function() ResetPoints() end,
