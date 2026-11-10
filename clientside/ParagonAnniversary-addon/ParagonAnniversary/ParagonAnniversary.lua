@@ -230,16 +230,24 @@ local function StopPreview()
 end
 
 -- ============================================================================
--- CLAIM ACHIEVEMENTS BUTTON
+-- CLAIM ACHIEVEMENTS BUTTON (bottom left)
 -- Asks the server (request 7, modules/paragon_achievement_claim.lua) to give
 -- Paragon experience for achievements that haven't given any yet.
+-- The server reports the claim state (response 7, after request 8 or a claim):
+-- the button is greyed out when there is nothing left to claim, or the
+-- character is below the minimum level.
 -- ============================================================================
+
+local claimState = { unclaimed = nil, eligible = nil }
 
 StaticPopupDialogs["PARAGON_CLAIM_ACHIEVEMENTS"] = {
     text = "Claim Paragon experience for all of this character's unclaimed achievements?",
     button1 = YES,
     button2 = NO,
     OnAccept = function()
+        -- Grey out straight away so it can't be clicked twice while the
+        -- server works; the server's status reply sets the final state
+        if UIParagonClaimButton then UIParagonClaimButton:Disable() end
         SendClientRequest("ParagonAnniversary", 7)
     end,
     timeout = 0,
@@ -248,14 +256,43 @@ StaticPopupDialogs["PARAGON_CLAIM_ACHIEVEMENTS"] = {
     preferredIndex = 3,
 }
 
+--- Enables or greys out the Claim button from the last known claim state
+local function UpdateClaimButton()
+    local claim = UIParagonClaimButton
+    if not claim then return end
+
+    -- Unknown state (no reply yet): leave it clickable, the server still checks
+    if claimState.unclaimed == nil
+        or (claimState.eligible and claimState.unclaimed > 0) then
+        claim:Enable()
+        claim.Text:SetTextColor(1, 0.82, 0)
+    else
+        claim:Disable()
+        claim.Text:SetTextColor(0.5, 0.5, 0.5)
+    end
+end
+
+--- Server response 7: claim state
+-- @param args table {unclaimed achievement count, 1 if at the minimum level else 0}
+function UIParagon_OnReceiveClaimStatus(_, args)
+    if not args then return end
+    claimState.unclaimed = tonumber(args[1]) or 0
+    claimState.eligible = tonumber(args[2]) == 1
+    UpdateClaimButton()
+end
+
 function CreateClaimButton()
     if not UIParagon or not UIParagon.ApplyButton or UIParagonClaimButton then return end
 
     local claim = CreateFrame("Button", "UIParagonClaimButton", UIParagon, "BigRedThreeSliceButtonTemplate")
     claim:SetWidth(160)
     claim:SetHeight(30)
-    -- Bottom-right corner, level with the Apply button (y = 10)
-    claim:SetPoint("BOTTOMRIGHT", UIParagon, "BOTTOMRIGHT", -20, 10)
+    -- Bottom-left corner, level with the Apply button (y = 10)
+    claim:SetPoint("BOTTOMLEFT", UIParagon, "BOTTOMLEFT", 20, 10)
+    -- Keep tooltips working while the button is greyed out
+    if claim.SetMotionScriptsWhileDisabled then
+        claim:SetMotionScriptsWhileDisabled(true)
+    end
 
     claim.Text = claim:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     claim.Text:SetPoint("CENTER", 0, 0)
@@ -274,9 +311,110 @@ function CreateClaimButton()
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:SetText("Claim Achievements", 1, 1, 1)
         GameTooltip:AddLine("Gives Paragon experience for achievements this character completed before it could earn Paragon experience. Each achievement can only be claimed once.", nil, nil, nil, true)
+        if claimState.unclaimed ~= nil then
+            if not claimState.eligible then
+                GameTooltip:AddLine("Not available until this character can earn Paragon experience.", 1, 0.3, 0.3, true)
+            elseif claimState.unclaimed == 0 then
+                GameTooltip:AddLine("All achievements have been claimed.", 0.5, 0.5, 0.5, true)
+            else
+                GameTooltip:AddLine(string.format("%d unclaimed achievement%s.", claimState.unclaimed,
+                    claimState.unclaimed == 1 and "" or "s"), 0.3, 1, 0.3, true)
+            end
+        end
         GameTooltip:Show()
     end)
     claim:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+    UpdateClaimButton()
+end
+
+--- Asks the server for the claim state (request 8); not in preview mode
+local function RequestClaimStatus()
+    if previewActive then return end
+    SendClientRequest("ParagonAnniversary", 8)
+end
+
+-- ============================================================================
+-- RESET POINTS BUTTON (bottom right)
+-- Sets every stat back to 0 through the normal stat request (request 2), which
+-- refunds the points on the server, then reloads the window (request 1).
+-- No server-side changes are needed.
+-- ============================================================================
+
+--- Returns the stats with points in them, as stat request entries set to 0
+local function BuildResetChanges()
+    local changes = {}
+    for categoryId, stats in pairs(ParagonData and ParagonData.stats or {}) do
+        for _, stat in ipairs(stats) do
+            if (stat.value or 0) > 0 then
+                table.insert(changes, { categoryId = categoryId, statId = stat.id, value = 0 })
+            end
+        end
+    end
+    return changes
+end
+
+local function ResetPoints()
+    local changes = BuildResetChanges()
+
+    -- Drop any changes not applied yet, and their highlight
+    for _, change in pairs(PendingChanges.stats) do
+        UIParagon_MarkStatAsModified(change.categoryId, change.statId, false)
+    end
+    wipe(PendingChanges.stats)
+
+    if #changes == 0 then
+        Print("no points are spent, nothing to reset.")
+        SendClientRequest("ParagonAnniversary", 1)
+        return
+    end
+
+    SendClientRequest("ParagonAnniversary", 2, changes)
+    -- Reload level, stats and points so the window shows the refunded state
+    SendClientRequest("ParagonAnniversary", 1)
+    Print("all Paragon points refunded.")
+end
+
+StaticPopupDialogs["PARAGON_RESET_POINTS"] = {
+    text = "Reset all Paragon points? Every stat goes back to 0 and all spent points are refunded.",
+    button1 = YES,
+    button2 = NO,
+    OnAccept = function() ResetPoints() end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+}
+
+function CreateResetButton()
+    if not UIParagon or not UIParagon.ApplyButton or UIParagonResetButton then return end
+
+    local reset = CreateFrame("Button", "UIParagonResetButton", UIParagon, "BigRedThreeSliceButtonTemplate")
+    reset:SetWidth(160)
+    reset:SetHeight(30)
+    -- Bottom-right corner, level with the Apply button (y = 10)
+    reset:SetPoint("BOTTOMRIGHT", UIParagon, "BOTTOMRIGHT", -20, 10)
+
+    reset.Text = reset:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    reset.Text:SetPoint("CENTER", 0, 0)
+    reset.Text:SetText("Reset Points")
+
+    reset:SetScript("OnClick", function()
+        PlaySound("igMainMenuOptionCheckBoxOn")
+        if previewActive then
+            Print("resetting is not available in preview mode.")
+            return
+        end
+        StaticPopup_Show("PARAGON_RESET_POINTS")
+    end)
+
+    reset:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetText("Reset Points", 1, 1, 1)
+        GameTooltip:AddLine("Sets every Paragon stat back to 0 and refunds all spent points.", nil, nil, nil, true)
+        GameTooltip:Show()
+    end)
+    reset:SetScript("OnLeave", function() GameTooltip:Hide() end)
 end
 
 -- ============================================================================
@@ -349,6 +487,10 @@ events:SetScript("OnEvent", function(self, event, arg1)
             UIParagon:HookScript("OnHide", StopPreview)
 
             CreateClaimButton()
+            CreateResetButton()
+
+            -- Refresh the Claim button state each time the window opens
+            UIParagon:HookScript("OnShow", RequestClaimStatus)
         end
         self:UnregisterEvent("ADDON_LOADED")
     end

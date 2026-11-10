@@ -25,6 +25,9 @@
 
     Adds:
     - Client request 7 (sent by the addon's Claim button)
+    - Client request 8 (claim state, sent when the Paragon window opens)
+    - Server response 7 (claim state: unclaimed count, 1/0 at minimum level),
+      used by the addon to grey out the Claim button
     - Table acore_ale.character_paragon_achievement_claimed (created on load)
 
     This file does not change any of the original module's files.
@@ -37,6 +40,8 @@ local Constants = require("paragon_constant")
 local sf = string.format
 local DB_NAME = Constants.DB_NAME
 local CLAIM_REQUEST_ID = 7
+local STATUS_REQUEST_ID = 8
+local STATUS_RESPONSE_ID = 7
 local PREFIX = "|cffffd100Paragon:|r "
 
 -- ============================================================================
@@ -132,6 +137,44 @@ do
 end
 
 -- ============================================================================
+-- CLAIM STATE (client request 8 -> server response 7)
+-- ============================================================================
+
+--- Number of completed achievements that have not given Paragon experience yet
+local function CountUnclaimed(guid)
+    local results = CharDBQuery(sf([[
+        SELECT COUNT(*)
+        FROM character_achievement ca
+        LEFT JOIN `%s`.`character_paragon_achievement_claimed` c
+            ON c.guid = ca.guid AND c.achievement = ca.achievement
+        WHERE ca.guid = %d AND c.achievement IS NULL;
+    ]], DB_NAME, guid))
+    if not results then
+        return 0
+    end
+    return results:GetUInt32(0)
+end
+
+--- Tells the addon whether there is anything to claim.
+--- `unclaimed` can be passed in when it is already known (right after a claim,
+--- the claimed records may not be written yet, so a fresh count could be wrong).
+local function SendClaimStatus(player, unclaimed)
+    if not player then
+        return
+    end
+    if unclaimed == nil then
+        unclaimed = CountUnclaimed(player:GetGUIDLow())
+    end
+    local eligible = (IsSystemEnabled() and player:GetLevel() >= MinimumLevel()) and 1 or 0
+    player:SendServerResponse(ParagonHook.Addon.Prefix, STATUS_RESPONSE_ID, unclaimed, eligible)
+end
+
+function OnParagonClientClaimStatus(player, _)
+    SendClaimStatus(player)
+    return true
+end
+
+-- ============================================================================
 -- CLAIM REQUEST (client request 7)
 -- ============================================================================
 
@@ -148,6 +191,7 @@ function OnParagonClientClaimAchievements(player, _)
     local min_level = MinimumLevel()
     if player:GetLevel() < min_level then
         player:SendBroadcastMessage(sf("%sreach level %d to claim achievement experience.", PREFIX, min_level))
+        SendClaimStatus(player)
         return false
     end
 
@@ -167,6 +211,7 @@ function OnParagonClientClaimAchievements(player, _)
 
     if not results then
         player:SendBroadcastMessage(PREFIX .. "no unclaimed achievements.")
+        SendClaimStatus(player, 0)
         return false
     end
 
@@ -229,10 +274,14 @@ function OnParagonClientClaimAchievements(player, _)
     player:SendBroadcastMessage(sf("%sclaimed %d achievement%s for %d experience%s.",
         PREFIX, #achievement_ids, #achievement_ids == 1 and "" or "s", total_experience, levels_text))
 
+    -- Everything found was just claimed: grey out the button
+    SendClaimStatus(player, 0)
+
     return true
 end
 
 ParagonHook.Addon.Functions[CLAIM_REQUEST_ID] = "OnParagonClientClaimAchievements"
+ParagonHook.Addon.Functions[STATUS_REQUEST_ID] = "OnParagonClientClaimStatus"
 RegisterClientRequests(ParagonHook.Addon, true)
 
 -- ============================================================================

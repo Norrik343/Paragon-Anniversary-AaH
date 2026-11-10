@@ -57,6 +57,7 @@ local Addon = {
         [4] = "UIParagon_OnReceiveAvailablePoints",   -- Receive available points to spend
         [5] = "UIParagon_OnReceiveStatistic",         -- Receive amount for specific statistic
         [6] = "UIParagon_OnReceiveTargetLevel",      -- Receive player target paragon level
+        [7] = "UIParagon_OnReceiveClaimStatus",      -- Receive claim state (ParagonAnniversary.lua)
     }
 }
 
