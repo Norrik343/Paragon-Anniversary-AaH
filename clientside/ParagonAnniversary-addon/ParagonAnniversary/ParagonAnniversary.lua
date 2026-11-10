@@ -310,7 +310,7 @@ function CreateClaimButton()
     claim:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:SetText("Claim Achievements", 1, 1, 1)
-        GameTooltip:AddLine("Gives Paragon experience for achievements this character completed before it could earn Paragon experience. Each achievement can only be claimed once.", nil, nil, nil, true)
+        GameTooltip:AddLine("Gives Paragon experience for achievements this character completed prior to reaching level 80. Each achievement can only be claimed once.", nil, nil, nil, true)
         if claimState.unclaimed ~= nil then
             if not claimState.eligible then
                 GameTooltip:AddLine("Not available until this character can earn Paragon experience.", 1, 0.3, 0.3, true)
