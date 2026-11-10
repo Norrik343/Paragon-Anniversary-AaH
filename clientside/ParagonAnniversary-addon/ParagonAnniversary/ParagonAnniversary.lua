@@ -229,6 +229,21 @@ local function StopPreview()
     Print("preview mode off. original values restored.")
 end
 
+--- Drops stat changes that were never applied when the window closes
+-- The window only shows pending changes; nothing was sent to the server, so
+-- clearing them and reloading the real values from the server (Hook ID: 1)
+-- puts the window back to what the character actually has.
+local function DiscardPendingChanges()
+    if previewActive then return end  -- StopPreview handles the preview
+    if not PendingChanges or not next(PendingChanges.stats) then return end
+
+    for _, change in pairs(PendingChanges.stats) do
+        UIParagon_MarkStatAsModified(change.categoryId, change.statId, false)
+    end
+    wipe(PendingChanges.stats)
+    SendClientRequest("ParagonAnniversary", 1)
+end
+
 -- ============================================================================
 -- CLAIM ACHIEVEMENTS BUTTON (bottom left)
 -- Asks the server (request 7, modules/paragon_achievement_claim.lua) to give
@@ -485,6 +500,9 @@ events:SetScript("OnEvent", function(self, event, arg1)
 
             -- Closing the window ends the preview and restores the real values
             UIParagon:HookScript("OnHide", StopPreview)
+
+            -- Closing the window drops changes that were not applied
+            UIParagon:HookScript("OnHide", DiscardPendingChanges)
 
             CreateClaimButton()
             CreateResetButton()
