@@ -612,33 +612,21 @@ end
 -- Sets the initial state from CVar and configures the label
 -- @param self CheckButton The checkbox frame
 function UIParagon_ShowMainMenuXP_OnLoad(self)
-    -- Get saved setting from CVar, initialize if it doesn't exist
-    local cvarValue = GetCVar("paragonShowMainMenuXP")
-    if (cvarValue == nil) then
-        -- CVar doesn't exist yet, create it with default value (0 = disabled)
-        SetCVar("paragonShowMainMenuXP", "0")
-        cvarValue = "0"
-    end
-
-    local isEnabled = (cvarValue == "1")
-
-    self:SetChecked(isEnabled)
+    -- The saved setting isn't loaded yet when this runs; ParagonAnniversary.lua
+    -- sets the real state on ADDON_LOADED (Paragon_SetExpBarEnabled)
+    self:SetChecked(Paragon_IsExpBarEnabled and Paragon_IsExpBarEnabled() or false)
 
     local Locales = GetLocaleTable()
     self.Text:SetText(Locales.SHOW_MAINMENU_XP_LABEL or "Show XP bar on main interface")
-
-    UIParagon_UpdateMainMenuXPVisibility()
 end
 
 --- Handle checkbox click event
--- Toggles the visibility of ParagonExpBar on MainMenuBar
+-- Turns the Paragon XP bar on the main interface on or off (saved per account)
 -- @param self CheckButton The checkbox frame
 function UIParagon_ShowMainMenuXP_OnClick(self)
-    local isChecked = self:GetChecked()
+    local isChecked = self:GetChecked() and true or false
 
-    SetCVar("paragonShowMainMenuXP", isChecked and "1" or "0")
-
-    UIParagon_UpdateMainMenuXPVisibility()
+    Paragon_SetExpBarEnabled(isChecked)
 
     if isChecked then
         PlaySound("igMainMenuOptionCheckBoxOn")
@@ -651,30 +639,17 @@ end
 -- Shows tooltip with description
 -- @param self CheckButton The checkbox frame
 function UIParagon_ShowMainMenuXP_OnEnter(self)
-    local Locales = GetLocaleTable()
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:SetText(Locales.SHOW_MAINMENU_XP_LABEL or "Show XP bar on main interface", 1, 1, 1)
-    GameTooltip:AddLine(Locales.SHOW_MAINMENU_XP_TOOLTIP or "If checked, displays the Paragon experience bar above your character's XP bar at the bottom of the screen.", nil, nil, nil, true)
+    GameTooltip:SetText("Show XP bar on main interface", 1, 1, 1)
+    GameTooltip:AddLine("Shows the Paragon experience bar in place of the experience bar at max level. A watched reputation stacks above it, like it does while levelling. With ElvUI, the bar can be moved with /moveui.", nil, nil, nil, true)
+    GameTooltip:AddLine("Also: /paragon bar", 0.7, 0.7, 0.7)
     GameTooltip:Show()
 end
 
---- Update the visibility of ParagonExpBar based on checkbox state
--- This function is called when the checkbox is toggled or on load
+--- Kept for older callers: re-applies the bar's visibility and position
 function UIParagon_UpdateMainMenuXPVisibility()
-    if not ParagonExpBar then return end
-
-    local cvarValue = GetCVar("paragonShowMainMenuXP")
-    if (cvarValue == nil) then
-        SetCVar("paragonShowMainMenuXP", "0")
-        cvarValue = "0"
-    end
-
-    local isEnabled = (cvarValue == "1")
-
-    if isEnabled then
-        ParagonExpBar_Update()
-    else
-        ParagonExpBar:Hide()
+    if ParagonExpBar_Refresh then
+        ParagonExpBar_Refresh()
     end
 end
 

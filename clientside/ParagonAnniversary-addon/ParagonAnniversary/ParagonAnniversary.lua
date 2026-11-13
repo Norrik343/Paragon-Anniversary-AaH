@@ -450,8 +450,13 @@ SlashCmdList["PARAGONANNIVERSARY"] = function(msg)
             button:Show()
             Print("minimap button shown.")
         end
+    elseif msg == "bar" then
+        local enabled = not Paragon_IsExpBarEnabled()
+        Paragon_SetExpBarEnabled(enabled)
+        Print(enabled and "experience bar shown (at max level)." or "experience bar hidden.")
     elseif msg == "help" then
         Print("/paragon - open or close the window")
+        Print("/paragon bar - show or hide the Paragon experience bar")
         Print("/paragon preview - fill the window with sample stats (client only)")
         Print("/paragon minimap - show or hide the minimap button")
     else
@@ -475,6 +480,12 @@ events:SetScript("OnEvent", function(self, event, arg1)
         if ParagonAnniversaryDB.hideMinimap then
             button:Hide()
         end
+
+        -- Experience bar setting: carry over the old CVar the first time
+        if ParagonAnniversaryDB.showExpBar == nil then
+            ParagonAnniversaryDB.showExpBar = (GetCVar("paragonShowMainMenuXP") == "1")
+        end
+        Paragon_SetExpBarEnabled(ParagonAnniversaryDB.showExpBar)
 
         -- Make the window draggable. Its frame template turns dragging on in
         -- OnLoad, but UIParagon replaces that OnLoad with its own, so the

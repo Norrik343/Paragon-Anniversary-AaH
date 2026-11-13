@@ -2,8 +2,9 @@
 ## Title: Paragon Anniversary
 ## Notes: Client UI for the Paragon Anniversary system (AzerothCore + ALE), repackaged as an addon with a minimap button and /paragon command.
 ## Author: Grim-Batol (original UI); addon conversion
-## Version: 1.0-addon
+## Version: 1.1-addon
 ## SavedVariables: ParagonAnniversaryDB
+## OptionalDeps: ElvUI
 
 # Libraries (c_timer.lua from the original patch is left out: nothing uses it)
 lib\smallfolk.lua

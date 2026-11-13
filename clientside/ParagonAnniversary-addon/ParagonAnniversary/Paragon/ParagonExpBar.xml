@@ -2,74 +2,96 @@
 ..\FrameXML\UI.xsd">
 	<Script file="ParagonExpBar.lua"/>
 
-	<!-- Paragon Experience Bar - Positioned above MainMenuBar -->
-	<Frame name="ParagonExpBar" enableMouse="true" parent="MainMenuBar" hidden="true" frameLevel="-1">
+	<!--
+		Paragon Experience Bar
+
+		Default UI: sits in the experience bar slot at the top of MainMenuBar
+		(where the normal XP bar is while levelling). A watched reputation stacks
+		above it, the same way it stacks above the XP bar while levelling.
+
+		ElvUI: ParagonExpBar.lua re-parents the bar to UIParent, gives it the
+		ElvUI look and registers a mover (/moveui) for it.
+
+		All positioning is done in ParagonExpBar.lua.
+	-->
+	<Frame name="ParagonExpBar" enableMouse="true" parent="MainMenuBar" hidden="true">
 		<Size>
-			<AbsDimension x="1024" y="11"/>
+			<AbsDimension x="1024" y="13"/>
 		</Size>
 		<Anchors>
-			<!-- By default, positioned above MainMenuBar (same as ReputationWatchBar) -->
-			<Anchor point="BOTTOM" relativeTo="MainMenuBar" relativePoint="TOP">
-				<Offset>
-					<AbsDimension x="0" y="-3"/>
-				</Offset>
-			</Anchor>
+			<Anchor point="TOP" relativeTo="MainMenuBar" relativePoint="TOP"/>
 		</Anchors>
 
 		<Frames>
-			<StatusBar name="$parentStatusBar" frameLevel="-999" parentKey="StatusBar" minValue="0" maxValue="100" defaultValue="0">
-				<Size>
-					<AbsDimension x="1024" y="8"/>
-				</Size>
+			<StatusBar name="$parentStatusBar" parentKey="StatusBar" minValue="0" maxValue="100" defaultValue="0">
 				<Anchors>
-					<Anchor point="TOP"/>
+					<Anchor point="TOPLEFT"/>
+					<Anchor point="BOTTOMRIGHT"/>
 				</Anchors>
 
 				<Layers>
+					<Layer level="BACKGROUND">
+						<Texture name="$parentBackground">
+							<Anchors>
+								<Anchor point="TOPLEFT"/>
+								<Anchor point="BOTTOMRIGHT"/>
+							</Anchors>
+							<Color r="0" g="0" b="0" a="0.5"/>
+						</Texture>
+					</Layer>
 					<Layer level="OVERLAY">
-						<!-- Segment 0: Left part of the decorative frame -->
-						<Texture name="$parentTexture0" file="Interface\PaperDollInfoFrame\UI-ReputationWatchBar">
+						<!-- Same divider art as the default XP bar (MainMenuXPBarTexture0-3) -->
+						<Texture name="$parentTexture0" file="Interface\MainMenuBar\UI-MainMenuBar-Dwarf">
 							<Size>
-								<AbsDimension x="256" y="11"/>
+								<AbsDimension x="256" y="10"/>
 							</Size>
 							<Anchors>
-								<Anchor point="TOPLEFT">
+								<Anchor point="BOTTOM">
 									<Offset>
-										<AbsDimension x="0" y="2"/>
+										<AbsDimension x="-384" y="3"/>
 									</Offset>
 								</Anchor>
 							</Anchors>
-							<TexCoords left="0" right="1.0" top="0" bottom="0.171875"/>
+							<TexCoords left="0" right="1.0" top="0.79296875" bottom="0.83203125"/>
 						</Texture>
-						<!-- Segment 1: Middle-left part -->
-						<Texture name="$parentTexture1" file="Interface\PaperDollInfoFrame\UI-ReputationWatchBar">
+						<Texture name="$parentTexture1" file="Interface\MainMenuBar\UI-MainMenuBar-Dwarf">
 							<Size>
-								<AbsDimension x="256" y="11"/>
+								<AbsDimension x="256" y="10"/>
 							</Size>
 							<Anchors>
-								<Anchor point="LEFT" relativeTo="$parentTexture0" relativePoint="RIGHT"/>
+								<Anchor point="BOTTOM">
+									<Offset>
+										<AbsDimension x="-128" y="3"/>
+									</Offset>
+								</Anchor>
 							</Anchors>
-							<TexCoords left="0" right="1.0" top="0.171875" bottom="0.34375"/>
+							<TexCoords left="0" right="1.0" top="0.54296875" bottom="0.58203125"/>
 						</Texture>
-						<!-- Segment 2: Middle-right part -->
-						<Texture name="$parentTexture2" file="Interface\PaperDollInfoFrame\UI-ReputationWatchBar">
+						<Texture name="$parentTexture2" file="Interface\MainMenuBar\UI-MainMenuBar-Dwarf">
 							<Size>
-								<AbsDimension x="256" y="11"/>
+								<AbsDimension x="256" y="10"/>
 							</Size>
 							<Anchors>
-								<Anchor point="LEFT" relativeTo="$parentTexture1" relativePoint="RIGHT"/>
+								<Anchor point="BOTTOM">
+									<Offset>
+										<AbsDimension x="128" y="3"/>
+									</Offset>
+								</Anchor>
 							</Anchors>
-							<TexCoords left="0" right="1.0" top="0.34375" bottom="0.515625"/>
+							<TexCoords left="0" right="1.0" top="0.29296875" bottom="0.33203125"/>
 						</Texture>
-						<!-- Segment 3: Right part -->
-						<Texture name="$parentTexture3" file="Interface\PaperDollInfoFrame\UI-ReputationWatchBar">
+						<Texture name="$parentTexture3" file="Interface\MainMenuBar\UI-MainMenuBar-Dwarf">
 							<Size>
-								<AbsDimension x="256" y="11"/>
+								<AbsDimension x="256" y="10"/>
 							</Size>
 							<Anchors>
-								<Anchor point="LEFT" relativeTo="$parentTexture2" relativePoint="RIGHT"/>
+								<Anchor point="BOTTOM">
+									<Offset>
+										<AbsDimension x="384" y="3"/>
+									</Offset>
+								</Anchor>
 							</Anchors>
-							<TexCoords left="0" right="1.0" top="0.515625" bottom="0.6875"/>
+							<TexCoords left="0" right="1.0" top="0.04296875" bottom="0.08203125"/>
 						</Texture>
 					</Layer>
 				</Layers>
@@ -79,7 +101,7 @@
 			</StatusBar>
 
 			<!-- Overlay frame for text -->
-			<Frame name="$parentOverlayFrame" frameLevel="999">
+			<Frame name="$parentOverlayFrame">
 				<Anchors>
 					<Anchor point="TOPLEFT"/>
 					<Anchor point="BOTTOMRIGHT"/>
@@ -102,28 +124,19 @@
 
 		<Scripts>
 			<OnLoad>
-				self:RegisterEvent("PLAYER_ENTERING_WORLD");
-				self:RegisterEvent("PLAYER_LEVEL_UP");
-				self:RegisterEvent("UPDATE_FACTION");
 				ParagonExpBar_OnLoad(self);
 			</OnLoad>
 			<OnEvent>
 				ParagonExpBar_OnEvent(self, event, ...);
 			</OnEvent>
 			<OnShow>
-				ParagonExpBar_Update();
-				UIParent_ManageFramePositions();
+				ParagonExpBar_UpdateText();
 			</OnShow>
-			<OnHide>
-				UIParent_ManageFramePositions();
-			</OnHide>
 			<OnEnter>
-				ParagonExpBarOverlayFrameText:Show();
+				ParagonExpBar_OnEnter(self);
 			</OnEnter>
 			<OnLeave>
-				if (not ParagonExpBar.textLocked) then
-					ParagonExpBarOverlayFrameText:Hide();
-				end
+				ParagonExpBar_OnLeave(self);
 			</OnLeave>
 		</Scripts>
 	</Frame>
