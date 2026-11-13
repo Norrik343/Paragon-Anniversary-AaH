@@ -641,8 +641,7 @@ end
 function UIParagon_ShowMainMenuXP_OnEnter(self)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     GameTooltip:SetText("Show XP bar on main interface", 1, 1, 1)
-    GameTooltip:AddLine("Shows the Paragon experience bar in place of the experience bar at max level. A watched reputation stacks above it, like it does while levelling. With ElvUI, the bar can be moved with /moveui.", nil, nil, nil, true)
-    GameTooltip:AddLine("Also: /paragon bar", 0.7, 0.7, 0.7)
+    GameTooltip:AddLine("Shows the Paragon experience bar in place of the experience bar at max level.", nil, nil, nil, true)
     GameTooltip:Show()
 end
 
